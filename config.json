@@ -1,0 +1,1 @@
+{"tickers":["SPY","QQQ","TLT"],"start_date":"2018-01-01","end_date":"2024-12-31","windows":[20,60],"thresholds":[2.0,2.5,3.0],"random_seed":42,"synthetic_length":1500,"synthetic_anomalies":30}
