@@ -87,3 +87,20 @@ The initial synthetic experiment contains one known volatility increase at index
 500. Its threshold comparison reports false alarms and detection delay. This is
 an online monitoring prototype; offline segmentation is intentionally left for a
 later, separate extension.
+
+### Warm-up contamination experiment
+
+The fixed warm-up design assumes that its first 100 observations describe one
+stable state. `scripts/run_baseline_robustness.py` deliberately replaces 0, 1,
+5, or 10 warm-up observations with large values over 100 random seeds. It then
+compares the change in classical mean/standard-deviation estimates with robust
+median/MAD estimates.
+
+```bash
+python scripts/run_baseline_robustness.py
+```
+
+Median/MAD is intended to resist a minority of isolated extreme values. It does
+not prove that the warm-up period contains no regime change, and the two methods'
+CUSUM thresholds require separate calibration before detection performance can
+be compared fairly.
