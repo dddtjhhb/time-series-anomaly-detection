@@ -6,11 +6,28 @@ import numpy as np
 import pandas as pd
 
 
+def estimate_baseline(values: pd.Series, method: str = "mean_std") -> tuple[float, float]:
+    """Estimate baseline center and scale with classical or robust statistics."""
+    if method == "mean_std":
+        center = float(values.mean())
+        scale = float(values.std(ddof=1))
+    elif method == "median_mad":
+        center = float(values.median())
+        mad = float((values - center).abs().median())
+        scale = 1.4826 * mad
+    else:
+        raise ValueError("method must be 'mean_std' or 'median_mad'")
+    if not np.isfinite(scale) or scale <= 0:
+        raise ValueError("baseline must have positive scale")
+    return center, scale
+
+
 def upper_cusum(
     values: pd.Series,
     warmup: int = 100,
     drift: float = 0.5,
     threshold: float = 20.0,
+    baseline_method: str = "mean_std",
 ) -> pd.DataFrame:
     """Run a one-sided online CUSUM using a fixed warm-up baseline.
 
@@ -29,17 +46,14 @@ def upper_cusum(
         raise ValueError("values must not contain missing or nonnumeric entries")
 
     baseline = numeric.iloc[:warmup]
-    baseline_mean = float(baseline.mean())
-    baseline_std = float(baseline.std(ddof=1))
-    if not np.isfinite(baseline_std) or baseline_std <= 0:
-        raise ValueError("warm-up period must have positive standard deviation")
+    baseline_center, baseline_scale = estimate_baseline(baseline, baseline_method)
 
     scores = np.zeros(len(numeric), dtype=float)
     alarms = np.zeros(len(numeric), dtype=bool)
     running_score = 0.0
 
     for i in range(warmup, len(numeric)):
-        standardized = (float(numeric.iloc[i]) - baseline_mean) / baseline_std
+        standardized = (float(numeric.iloc[i]) - baseline_center) / baseline_scale
         running_score = max(0.0, running_score + standardized - drift)
         scores[i] = running_score
         alarms[i] = running_score > threshold
@@ -48,8 +62,9 @@ def upper_cusum(
         {
             "CUSUMScore": scores,
             "IsCUSUMAlarm": alarms,
-            "BaselineMean": baseline_mean,
-            "BaselineStd": baseline_std,
+            "BaselineCenter": baseline_center,
+            "BaselineScale": baseline_scale,
+            "BaselineMethod": baseline_method,
         },
         index=values.index,
     )
