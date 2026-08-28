@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 from src.data import clean_prices
-from src.cusum import first_alarm_summary, upper_cusum
+from src.cusum import estimate_baseline, first_alarm_summary, upper_cusum
 from src.evaluation import classification_metrics
 from src.methods import add_rolling_statistics, flag_anomalies
 from src.synthetic import make_synthetic_series, make_volatility_change_series
@@ -45,5 +45,18 @@ class TestCore(unittest.TestCase):
         self.assertFalse(summary["FalseAlarmBeforeChange"])
         self.assertTrue(summary["Detected"])
         self.assertGreaterEqual(summary["DetectionDelay"], 0)
+
+    def test_robust_baseline_resists_one_extreme_value(self):
+        clean = pd.Series(np.linspace(0.001, 0.02, 100))
+        contaminated = clean.copy()
+        contaminated.iloc[0] = 1.0
+        classical_clean = estimate_baseline(clean, "mean_std")
+        classical_dirty = estimate_baseline(contaminated, "mean_std")
+        robust_clean = estimate_baseline(clean, "median_mad")
+        robust_dirty = estimate_baseline(contaminated, "median_mad")
+        self.assertGreater(
+            abs(classical_dirty[0] - classical_clean[0]),
+            abs(robust_dirty[0] - robust_clean[0]),
+        )
 
 if __name__ == "__main__": unittest.main()
