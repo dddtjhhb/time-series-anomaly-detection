@@ -2,9 +2,10 @@ import unittest
 import numpy as np
 import pandas as pd
 from src.data import clean_prices
+from src.cusum import first_alarm_summary, upper_cusum
 from src.evaluation import classification_metrics
 from src.methods import add_rolling_statistics, flag_anomalies
-from src.synthetic import make_synthetic_series
+from src.synthetic import make_synthetic_series, make_volatility_change_series
 
 class TestCore(unittest.TestCase):
     def test_cleaning(self):
@@ -28,5 +29,21 @@ class TestCore(unittest.TestCase):
         left=make_synthetic_series(200,5,7); right=make_synthetic_series(200,5,7)
         pd.testing.assert_frame_equal(left,right)
         self.assertEqual(int(left["IsInjected"].sum()),5)
+
+    def test_cusum_is_online(self):
+        early = pd.Series(([0.0, 1.0] * 20) + [0.5] * 10 + [1.0] * 10)
+        changed_future = early.copy()
+        changed_future.iloc[50:] = 100.0
+        left = upper_cusum(early, warmup=20)
+        right = upper_cusum(changed_future, warmup=20)
+        pd.testing.assert_series_equal(left.loc[:49, "CUSUMScore"], right.loc[:49, "CUSUMScore"])
+
+    def test_cusum_detects_volatility_increase(self):
+        data = make_volatility_change_series(seed=42)
+        monitored = upper_cusum(data["AbsReturn"], warmup=100, threshold=20.0)
+        summary = first_alarm_summary(monitored["IsCUSUMAlarm"], true_change_index=500)
+        self.assertFalse(summary["FalseAlarmBeforeChange"])
+        self.assertTrue(summary["Detected"])
+        self.assertGreaterEqual(summary["DetectionDelay"], 0)
 
 if __name__ == "__main__": unittest.main()
