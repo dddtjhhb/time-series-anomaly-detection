@@ -71,3 +71,19 @@ Repeat the simulation over many random seeds and report mean performance with un
 - **Day 4:** final visual QA, README findings, tests, GitHub polish, résumé bullets, professor pitch.
 
 This is statistical computing, not a portfolio backtest or investment recommendation.
+
+## Development: online CUSUM change monitoring
+
+The `feature/online-cusum` branch adds a first change-point experiment. It uses
+the first 100 absolute returns as a fixed baseline, then processes each later
+observation once in chronological order. A one-sided CUSUM accumulates persistent
+upward deviations in volatility without using future observations.
+
+```bash
+python scripts/run_cusum_demo.py
+```
+
+The initial synthetic experiment contains one known volatility increase at index
+500. Its threshold comparison reports false alarms and detection delay. This is
+an online monitoring prototype; offline segmentation is intentionally left for a
+later, separate extension.
