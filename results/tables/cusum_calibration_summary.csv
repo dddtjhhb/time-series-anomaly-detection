@@ -1,0 +1,17 @@
+BaselineMethod,Threshold,FalseAlarms,FalseAlarmRate,Simulations
+mean_std,8.0,104,0.208,500
+mean_std,12.0,17,0.034,500
+mean_std,16.0,7,0.014,500
+mean_std,20.0,3,0.006,500
+mean_std,24.0,0,0.0,500
+mean_std,30.0,0,0.0,500
+mean_std,40.0,0,0.0,500
+mean_std,50.0,0,0.0,500
+median_mad,8.0,291,0.582,500
+median_mad,12.0,139,0.278,500
+median_mad,16.0,82,0.164,500
+median_mad,20.0,57,0.114,500
+median_mad,24.0,44,0.088,500
+median_mad,30.0,29,0.058,500
+median_mad,40.0,19,0.038,500
+median_mad,50.0,16,0.032,500

@@ -18,6 +18,7 @@ The reference statistics are shifted one day, so today's return cannot influence
 config.json               experiment settings and random seed
 src/data.py               download, cleaning, daily returns
 src/methods.py            rolling statistics and flags
+src/cusum.py              online one-sided CUSUM monitoring
 src/synthetic.py          simulation and injected anomalies
 src/evaluation.py         precision, recall, F1, experiment grid
 scripts/run_analysis.py   complete pipeline
@@ -72,3 +73,65 @@ Repeat the simulation over many random seeds and report mean performance with un
 
 This is statistical computing, not a portfolio backtest or investment recommendation.
 
+feature/online-cusum
+## Development: online CUSUM change monitoring
+
+The `feature/online-cusum` branch adds a first change-point experiment. It uses
+the first 100 absolute returns as a fixed baseline, then processes each later
+observation once in chronological order. A one-sided CUSUM accumulates persistent
+upward deviations in volatility without using future observations.
+
+```bash
+python scripts/run_cusum_demo.py
+```
+
+The initial synthetic experiment contains one known volatility increase at index
+500. Its threshold comparison reports false alarms and detection delay. This is
+an online monitoring prototype; offline segmentation is intentionally left for a
+later, separate extension.
+
+### Warm-up contamination experiment
+
+The fixed warm-up design assumes that its first 100 observations describe one
+stable state. `scripts/run_baseline_robustness.py` deliberately replaces 0, 1,
+5, or 10 warm-up observations with large values over 100 random seeds. It then
+compares the change in classical mean/standard-deviation estimates with robust
+median/MAD estimates.
+
+```bash
+python scripts/run_baseline_robustness.py
+```
+
+Median/MAD is intended to resist a minority of isolated extreme values. It does
+not prove that the warm-up period contains no regime change, and the two methods'
+CUSUM thresholds must be calibrated separately before detection performance can
+be compared fairly.
+
+### Calibrated CUSUM experiment
+
+Thresholds were calibrated on 500 no-change simulations, targeting at most a 5%
+chance of any false alarm during the 400-observation monitoring period. The
+selected settings were threshold 12 for mean/standard deviation (3.4% estimated
+false-alarm rate) and threshold 40 for median/MAD (3.8%). Evaluation then used
+independent random seeds.
+
+```bash
+python scripts/calibrate_cusum_threshold.py
+python scripts/evaluate_cusum_shifts.py
+python scripts/evaluate_cusum_contamination.py
+```
+
+With a clean warm-up, mean/standard deviation detected a 1% to 2% volatility
+increase with median delay 11, versus 35 for median/MAD at a matched 4% false-
+alarm rate. Robustness changed the conclusion under contamination: replacing 5
+of 100 warm-up observations with 10% absolute returns caused mean/standard
+deviation to miss all 500 simulated changes, while median/MAD detected 99.2%
+with median delay 43. Thus robustness helps under the specific contamination
+model, but costs sensitivity when the warm-up data are clean.
+
+![CUSUM contamination comparison](results/figures/cusum_contamination.png)
+
+This experiment monitors only the first upward volatility change using a fixed
+warm-up baseline. It does not yet handle downward shifts, repeated regime
+changes, or automatic recalibration after an alarm.
+main
