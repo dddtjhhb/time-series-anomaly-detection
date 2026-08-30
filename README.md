@@ -73,6 +73,7 @@ Repeat the simulation over many random seeds and report mean performance with un
 
 This is statistical computing, not a portfolio backtest or investment recommendation.
 
+feature/online-cusum
 ## Development: online CUSUM change monitoring
 
 The `feature/online-cusum` branch adds a first change-point experiment. It uses
@@ -133,3 +134,4 @@ model, but costs sensitivity when the warm-up data are clean.
 This experiment monitors only the first upward volatility change using a fixed
 warm-up baseline. It does not yet handle downward shifts, repeated regime
 changes, or automatic recalibration after an alarm.
+main
