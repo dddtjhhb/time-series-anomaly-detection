@@ -1,0 +1,7 @@
+BaselineMethod,SigmaBefore,SigmaAfter,Threshold,FalseAlarmRate,DetectionRate,MissRate,MedianDetectionDelay,Simulations
+mean_std,0.01,0.015,12.0,0.04,0.958,0.002,39.0,500
+mean_std,0.01,0.02,12.0,0.04,0.96,0.0,11.0,500
+mean_std,0.01,0.03,12.0,0.04,0.96,0.0,5.0,500
+median_mad,0.01,0.015,40.0,0.04,0.924,0.036,90.0,500
+median_mad,0.01,0.02,40.0,0.04,0.96,0.0,35.0,500
+median_mad,0.01,0.03,40.0,0.04,0.96,0.0,15.0,500
