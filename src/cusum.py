@@ -32,9 +32,10 @@ def upper_cusum(
     """Run a one-sided online CUSUM using a fixed warm-up baseline.
 
     ``values`` should be a nonnegative volatility proxy such as absolute return.
-    The first ``warmup`` observations estimate the baseline mean and standard
-    deviation. Each later observation is processed exactly once, in time order.
-    No future observation is used to calculate an earlier score.
+    The first ``warmup`` observations estimate a fixed baseline center and
+    scale. Each later observation is processed exactly once, in time order.
+    No future observation is used to calculate an earlier score. Only the first
+    threshold crossing is marked as an alarm.
     """
     if warmup < 20 or warmup >= len(values):
         raise ValueError("warmup must be at least 20 and shorter than the series")
@@ -51,12 +52,15 @@ def upper_cusum(
     scores = np.zeros(len(numeric), dtype=float)
     alarms = np.zeros(len(numeric), dtype=bool)
     running_score = 0.0
+    has_alarmed = False
 
     for i in range(warmup, len(numeric)):
         standardized = (float(numeric.iloc[i]) - baseline_center) / baseline_scale
         running_score = max(0.0, running_score + standardized - drift)
         scores[i] = running_score
-        alarms[i] = running_score > threshold
+        if not has_alarmed and running_score > threshold:
+            alarms[i] = True
+            has_alarmed = True
 
     return pd.DataFrame(
         {
