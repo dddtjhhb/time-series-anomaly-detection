@@ -4,6 +4,7 @@ import pandas as pd
 from src.data import clean_prices
 from src.cusum import estimate_baseline, first_alarm_summary, upper_cusum
 from src.evaluation import classification_metrics
+from src.forecasting import add_volatility_forecast_features, regression_metrics
 from src.methods import add_rolling_statistics, flag_anomalies
 from src.synthetic import make_synthetic_series, make_volatility_change_series
 
@@ -45,6 +46,7 @@ class TestCore(unittest.TestCase):
         self.assertFalse(summary["FalseAlarmBeforeChange"])
         self.assertTrue(summary["Detected"])
         self.assertGreaterEqual(summary["DetectionDelay"], 0)
+        self.assertEqual(int(monitored["IsCUSUMAlarm"].sum()), 1)
 
     def test_robust_baseline_resists_one_extreme_value(self):
         clean = pd.Series(np.linspace(0.001, 0.02, 100))
@@ -57,6 +59,34 @@ class TestCore(unittest.TestCase):
         self.assertGreater(
             abs(classical_dirty[0] - classical_clean[0]),
             abs(robust_dirty[0] - robust_clean[0]),
+        )
+
+    def test_forecast_features_use_past_and_future_as_declared(self):
+        frame = pd.DataFrame({"Return": np.arange(1.0, 31.0)})
+        result = add_volatility_forecast_features(
+            frame, volatility_window=2, cusum_window=20, horizon=2
+        )
+        self.assertAlmostEqual(
+            result.loc[5, "PastVolatility20"], np.sqrt((5.0**2 + 6.0**2) / 2) * np.sqrt(252)
+        )
+        self.assertAlmostEqual(
+            result.loc[5, "FutureVolatility5"], np.sqrt((7.0**2 + 8.0**2) / 2) * np.sqrt(252)
+        )
+
+    def test_regression_metrics(self):
+        metrics = regression_metrics(pd.Series([1.0, 3.0]), pd.Series([2.0, 2.0]))
+        self.assertEqual(metrics["MAE"], 1.0)
+        self.assertEqual(metrics["RMSE"], 1.0)
+
+    def test_adaptive_cusum_feature_does_not_use_future(self):
+        early = pd.DataFrame({"Return": np.linspace(-0.02, 0.02, 80)})
+        changed_future = early.copy()
+        changed_future.loc[70:, "Return"] = 10.0
+        left = add_volatility_forecast_features(early)
+        right = add_volatility_forecast_features(changed_future)
+        pd.testing.assert_series_equal(
+            left.loc[:69, "AdaptiveCUSUMScore"],
+            right.loc[:69, "AdaptiveCUSUMScore"],
         )
 
 if __name__ == "__main__": unittest.main()

@@ -19,6 +19,7 @@ config.json               experiment settings and random seed
 src/data.py               download, cleaning, daily returns
 src/methods.py            rolling statistics and flags
 src/cusum.py              online one-sided CUSUM monitoring
+src/forecasting.py        past-only volatility features and linear models
 src/synthetic.py          simulation and injected anomalies
 src/evaluation.py         precision, recall, F1, experiment grid
 scripts/run_analysis.py   complete pipeline
@@ -60,10 +61,6 @@ A lower threshold usually improves recall but creates more false positives. A lo
 
 These conclusions apply to this simulation design and seed; they do not establish that 60/2.5 is universally optimal. `results/tables/synthetic_cases.csv` makes every true positive, false positive, and false negative auditable.
 
-## What I would study next
-
-Repeat the simulation over many random seeds and report mean performance with uncertainty intervals; simulate clusters and gradual level/variance changes; and compare the simple baseline with a robust median/MAD z-score. These are extensions, not claims made by the current prototype.
-
 ## Four-day plan
 
 - **Day 1:** structure, ingestion/cleaning, returns, rolling method, configuration, tests.
@@ -73,7 +70,6 @@ Repeat the simulation over many random seeds and report mean performance with un
 
 This is statistical computing, not a portfolio backtest or investment recommendation.
 
-feature/online-cusum
 ## Development: online CUSUM change monitoring
 
 The `feature/online-cusum` branch adds a first change-point experiment. It uses
@@ -134,4 +130,30 @@ model, but costs sensitivity when the warm-up data are clean.
 This experiment monitors only the first upward volatility change using a fixed
 warm-up baseline. It does not yet handle downward shifts, repeated regime
 changes, or automatic recalibration after an alarm.
-main
+
+## Out-of-sample volatility forecast extension
+
+The forecasting extension asks whether a past-only adaptive CUSUM score adds
+predictive information beyond recent realized volatility. At each date, the
+baseline model uses the previous 20 returns to predict annualized volatility
+over the next 5 trading days. The augmented linear model adds a CUSUM score
+whose center and scale use only the preceding 60 absolute returns.
+
+Models are fitted on 2018–2021 data and evaluated without refitting on
+2022–2024 data:
+
+```bash
+python scripts/run_volatility_forecast.py
+```
+
+The CUSUM feature did **not** improve this simple model. Relative to the
+past-volatility baseline, test RMSE increased by 16.9% for QQQ, 18.1% for SPY,
+and 15.5% for TLT. This negative result separates detection from prediction:
+CUSUM can identify persistent deviations without necessarily forecasting future
+volatility beyond information already contained in recent volatility.
+
+![Out-of-sample volatility forecast RMSE](results/figures/volatility_forecast_rmse.png)
+
+The experiment tests one linear specification, one time split, and one forecast
+horizon. It does not support a trading rule or a claim that CUSUM has no
+predictive value under every design.

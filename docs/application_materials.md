@@ -5,8 +5,12 @@
 - Built a reproducible Python pipeline to clean 5,283 daily observations across SPY, QQQ, and TLT and evaluate rolling z-score anomaly detection over 18 window/threshold/asset combinations.
 - Designed a seeded synthetic time-series experiment with 30 known injected shocks; implemented precision, recall, F1, and false-positive/false-negative analysis, achieving 0.783 F1 for the best pre-specified configuration.
 - Prevented temporal information leakage with past-only rolling statistics; added automated tests, cached data ingestion, parameterized configuration, publication-ready plots, and documented one-command reproduction.
+- Implemented and Monte Carlo-calibrated an online CUSUM volatility-change detector; compared classical mean/SD and robust median/MAD baselines at matched false-alarm rates under controlled warm-up contamination.
+- Tested whether an adaptive CUSUM score improved 5-day volatility forecasts on a 2022–2024 holdout set; documented the negative result when the augmented linear model underperformed the recent-volatility baseline across SPY, QQQ, and TLT.
 
-Use two bullets if space is tight. Keep “best pre-specified configuration” because it accurately describes the limited grid search.
+Use two or three bullets if space is tight. Keep “best pre-specified
+configuration” and “negative result” because both accurately describe the
+limited experiments without overstating their conclusions.
 
 ## 2–3 minute English pitch to a professor
 
